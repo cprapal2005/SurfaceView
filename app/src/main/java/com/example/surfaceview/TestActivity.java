@@ -17,7 +17,7 @@ public class TestActivity extends Activity {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         super.onCreate(savedInstanceState);
-        miVista = new DragAndDropView(this);
-        setContentView(miVista);
+        DragAndDropView miVista = new DragAndDropView(this);
+        setContentView(miVista.getLayout());
     }
 }

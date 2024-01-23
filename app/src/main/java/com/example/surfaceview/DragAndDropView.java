@@ -7,33 +7,103 @@ import android.graphics.Paint;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.RelativeLayout;
 
 import androidx.annotation.NonNull;
 
 import java.util.ArrayList;
+import java.util.Random;
 
 public class DragAndDropView extends SurfaceView implements SurfaceHolder.Callback {
 
     private ArrayList<Figura> figuras;
-    private int figuraActiva, id=0;
+    private int figuraActiva, id=0, contFiguras = 2;
     private float iniX=0, iniY=0;
     private boolean dentro = false;
-    private Rectangulo rectangulo;
     private hiloPintar thread;
+    private Button botonReset, botonAnadir;
+    private RelativeLayout layout;
+
+    private Canvas canvas;
 
     public DragAndDropView(Context context) {
         super(context);
         getHolder().addCallback(this);
         setBackgroundColor(Color.WHITE);
+
+        botonReset = new Button(context);
+        botonReset.setText("Reset");
+        botonReset.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                crearFiguras();
+            }
+        });
+        RelativeLayout.LayoutParams buttonParams = new RelativeLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        buttonParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
+        buttonParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+
+        botonAnadir = new Button(context);
+        botonAnadir.setText("Añadir");
+        botonAnadir.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                if(contFiguras+2<=figuras.size()) contFiguras+=2;
+            }
+        });
+        RelativeLayout.LayoutParams buttonParamsAnadir = new RelativeLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        buttonParamsAnadir.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        layout = new RelativeLayout(context);
+        layout.addView(this);
+        layout.addView(botonAnadir, buttonParamsAnadir);
+        layout.addView(botonReset, buttonParams);
+
     }
 
+    public RelativeLayout getLayout() {
+        return layout;
+    }
+
+    private void crearFiguras() {
+        contFiguras=2;
+        figuras = new ArrayList<Figura>();
+        int minX = 0;
+        int maxX = layout.getHeight();
+        int minY = 0;
+        int maxY = layout.getWidth();
+        for (int i = 0; i < 10; i++) {
+            Random random = new Random();
+            int randomX = random.nextInt(maxX - minX + 1) + minX;
+            int randomY = random.nextInt(maxY - minY + 1) + minY;
+            if(i%2==0) {
+                figuras.add(new Circulo(this.id++, (float) randomX, (float) randomY, 100, false));
+                 randomX = random.nextInt(maxX - minX + 1) + minX;
+                 randomY = random.nextInt(maxY - minY + 1) + minY;
+                figuras.add(new Circulo(this.id++, (float) randomX, (float) randomY, 100, true));
+            }
+            else {
+                figuras.add(new Rectangulo(this.id++, 200, 500, (float) randomX, (float) randomY, false));
+                 randomX = random.nextInt(maxX - minX + 1) + minX;
+                 randomY = random.nextInt(maxY - minY + 1) + minY;
+                figuras.add(new Rectangulo(this.id++, 200, 500, (float) randomX, (float) randomY, true));
+            }
+
+
+        }
+    }
 
     @Override
     public void surfaceCreated(@NonNull SurfaceHolder surfaceHolder) {
-        figuras = new ArrayList<Figura>();
-        figuras.add(new Circulo(this.id++, 200, 200, 100));
-        this.rectangulo = new Rectangulo(this.id++, 200, 500, 200, 200);
-        figuras.add(this.rectangulo);
         thread = new hiloPintar(getHolder(), this);
         thread.setRunning(true);
         thread.start();
@@ -41,7 +111,7 @@ public class DragAndDropView extends SurfaceView implements SurfaceHolder.Callba
 
     @Override
     public void surfaceChanged(@NonNull SurfaceHolder surfaceHolder, int i, int i1, int i2) {
-
+        crearFiguras();
     }
 
     @Override
@@ -56,12 +126,11 @@ public class DragAndDropView extends SurfaceView implements SurfaceHolder.Callba
         }
     }
 
-    @Override
-    protected void onDraw(@NonNull Canvas canvas) {
-        setBackgroundColor(Color.WHITE);
-        Paint paint = new Paint();
-        paint.setAntiAlias(true);
-        for (int i = 0; i < figuras.size(); i++) {
+    private void dibujarFiguras(Paint paint) {
+
+        for (int i = 0; i < contFiguras; i++) {
+            if(figuras.get(i).isRelleno()) paint.setStyle(Paint.Style.FILL);
+            else paint.setStyle(Paint.Style.STROKE);
             if(figuras.get(i) instanceof Rectangulo) {
                 paint.setColor(Color.RED);
                 canvas.drawRect(figuras.get(i).getX(), figuras.get(i).getY(), (figuras.get(i).getX()+ ((Rectangulo) figuras.get(i)).getAncho()), (figuras.get(i).getY()+ ((Rectangulo) figuras.get(i)).getAlto()), paint);
@@ -75,12 +144,22 @@ public class DragAndDropView extends SurfaceView implements SurfaceHolder.Callba
     }
 
     @Override
+    protected void onDraw(@NonNull Canvas canvas) {
+        setBackgroundColor(Color.WHITE);
+        Paint paint = new Paint();
+        paint.setAntiAlias(true);
+        this.canvas = canvas;
+        dibujarFiguras(paint);
+
+    }
+
+    @Override
     public boolean onTouchEvent(MotionEvent event) {
 
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 for (int i = 0; i < figuras.size(); i++) {
-                    if(figuras.get(i).estaDentro(event.getX(), event.getY())) {
+                    if(figuras.get(i).estaDentro(event.getX(), event.getY()) && figuras.get(i).isRelleno()) {
                         this.dentro = true;
                         iniX = event.getX() - figuras.get(i).getX();
                         iniY = event.getY() - figuras.get(i).getY();
@@ -93,6 +172,11 @@ public class DragAndDropView extends SurfaceView implements SurfaceHolder.Callba
                     if(this.dentro) {
                         figuras.get(figuraActiva).setX((event.getX() - iniX));
                         figuras.get(figuraActiva).setY((event.getY() - iniY));
+                        if (figuras.get(figuraActiva-1).estaEnRadioCentral(figuras.get(figuraActiva).getX(), figuras.get(figuraActiva).getY(), 40)) {
+                            figuras.get(figuraActiva).setX(figuras.get(figuraActiva-1).getX());
+                            figuras.get(figuraActiva).setY(figuras.get(figuraActiva-1).getY());
+                            break;
+                        }
                     }
                 }
                 break;

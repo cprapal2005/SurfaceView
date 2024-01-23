@@ -3,9 +3,8 @@ package com.example.surfaceview;
 public class Circulo extends Figura {
 
     private int id, radio;
-    private float x,y;
-    public Circulo(int id, float x, float y, int radio) {
-        super(x, y);
+    public Circulo(int id, float x, float y, int radio, boolean relleno) {
+        super(x, y, relleno);
         this.id = id;
         this.radio = radio;
     }
@@ -18,26 +17,6 @@ public class Circulo extends Figura {
         this.id = id;
     }
 
-    @Override
-    public float getX() {
-        return x;
-    }
-
-    @Override
-    public void setX(float x) {
-        this.x = x;
-    }
-
-    @Override
-    public float getY() {
-        return y;
-    }
-
-    @Override
-    public void setY(float y) {
-        this.y = y;
-    }
-
     public int getRadio() {
         return radio;
     }
@@ -48,7 +27,7 @@ public class Circulo extends Figura {
 
     @Override
     public boolean estaDentro(float x, float y) {
-       if(Math.pow(this.radio, 2) > (Math.pow(x-this.x, 2) + Math.pow(y-this.y, 2))) {
+       if(Math.pow(this.radio, 2) > (Math.pow(x-super.getX(), 2) + Math.pow(y-super.getY(), 2))) {
 
            return true;
 
@@ -56,4 +35,12 @@ public class Circulo extends Figura {
 
        else return false;
     }
+
+    public boolean estaEnRadioCentral(float x, float y, float radioAproximado) {
+
+        double distancia = Math.sqrt(Math.pow(x - super.getX(), 2) + Math.pow(y - super.getY(), 2));
+
+        return distancia <= radioAproximado;
+    }
+
 }
