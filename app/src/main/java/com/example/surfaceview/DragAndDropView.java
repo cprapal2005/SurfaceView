@@ -11,6 +11,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 
@@ -20,26 +21,43 @@ import java.util.Random;
 public class DragAndDropView extends SurfaceView implements SurfaceHolder.Callback {
 
     private ArrayList<Figura> figuras;
-    private int figuraActiva, id=0, contFiguras = 2;
+    private ArrayList<Integer> colores;
+    private int figuraActiva, id=0, contFiguras = 2, numeroFiguras = 14, contPuntos = 0;
     private float iniX=0, iniY=0;
     private boolean dentro = false;
     private hiloPintar thread;
     private Button botonReset, botonAnadir;
+    private TextView puntos;
     private RelativeLayout layout;
-
     private Canvas canvas;
 
     public DragAndDropView(Context context) {
         super(context);
         getHolder().addCallback(this);
         setBackgroundColor(Color.WHITE);
-
+        colores = new ArrayList<Integer>();
+        colores.add(Color.RED);colores.add(Color.RED);
+        colores.add(Color.BLUE);colores.add(Color.BLUE);
+        colores.add(Color.BLACK);colores.add(Color.BLACK);
+        colores.add(Color.YELLOW);colores.add(Color.YELLOW);
+        colores.add(Color.MAGENTA);colores.add(Color.MAGENTA);
+        colores.add(Color.GREEN);colores.add(Color.GREEN);
+        puntos = new TextView(context);
+        puntos.setText("Puntos: " + contPuntos + " / " + numeroFiguras/2);
+        RelativeLayout.LayoutParams puntosParams = new RelativeLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        puntosParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
+        puntosParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
         botonReset = new Button(context);
         botonReset.setText("Reset");
         botonReset.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
                 crearFiguras();
+                contPuntos = 0;
+                puntos.setText("Puntos: " + contPuntos + " / " + numeroFiguras/2);
             }
         });
         RelativeLayout.LayoutParams buttonParams = new RelativeLayout.LayoutParams(
@@ -55,7 +73,7 @@ public class DragAndDropView extends SurfaceView implements SurfaceHolder.Callba
             @Override
             public void onClick(View v) {
 
-                if(contFiguras+2<=figuras.size()) contFiguras+=2;
+                if(contFiguras+4<=numeroFiguras) contFiguras+=2;
             }
         });
         RelativeLayout.LayoutParams buttonParamsAnadir = new RelativeLayout.LayoutParams(
@@ -65,6 +83,7 @@ public class DragAndDropView extends SurfaceView implements SurfaceHolder.Callba
         buttonParamsAnadir.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
         layout = new RelativeLayout(context);
         layout.addView(this);
+        layout.addView(puntos, puntosParams);
         layout.addView(botonAnadir, buttonParamsAnadir);
         layout.addView(botonReset, buttonParams);
 
@@ -78,10 +97,10 @@ public class DragAndDropView extends SurfaceView implements SurfaceHolder.Callba
         contFiguras=2;
         figuras = new ArrayList<Figura>();
         int minX = 0;
-        int maxX = layout.getHeight();
+        int maxX = layout.getWidth();
         int minY = 0;
-        int maxY = layout.getWidth();
-        for (int i = 0; i < 10; i++) {
+        int maxY = layout.getHeight();
+        for (int i = 0; i < numeroFiguras; i++) {
             Random random = new Random();
             int randomX = random.nextInt(maxX - minX + 1) + minX;
             int randomY = random.nextInt(maxY - minY + 1) + minY;
@@ -132,11 +151,11 @@ public class DragAndDropView extends SurfaceView implements SurfaceHolder.Callba
             if(figuras.get(i).isRelleno()) paint.setStyle(Paint.Style.FILL);
             else paint.setStyle(Paint.Style.STROKE);
             if(figuras.get(i) instanceof Rectangulo) {
-                paint.setColor(Color.RED);
+                paint.setColor(colores.get(i));
                 canvas.drawRect(figuras.get(i).getX(), figuras.get(i).getY(), (figuras.get(i).getX()+ ((Rectangulo) figuras.get(i)).getAncho()), (figuras.get(i).getY()+ ((Rectangulo) figuras.get(i)).getAlto()), paint);
             }
             if(figuras.get(i) instanceof Circulo) {
-                paint.setColor(Color.BLUE);
+                paint.setColor(colores.get(i));
                 canvas.drawCircle(figuras.get(i).getX(), figuras.get(i).getY(), ((Circulo) figuras.get(i)).getRadio(), paint);
             }
         }
@@ -169,12 +188,14 @@ public class DragAndDropView extends SurfaceView implements SurfaceHolder.Callba
                 break;
             case MotionEvent.ACTION_MOVE:
                 for (int i = 0; i < figuras.size(); i++) {
-                    if(this.dentro) {
+                    if(this.dentro && !figuras.get(figuraActiva-1).estaEnRadioCentral(figuras.get(figuraActiva).getX(), figuras.get(figuraActiva).getY(), 40)) {
                         figuras.get(figuraActiva).setX((event.getX() - iniX));
                         figuras.get(figuraActiva).setY((event.getY() - iniY));
                         if (figuras.get(figuraActiva-1).estaEnRadioCentral(figuras.get(figuraActiva).getX(), figuras.get(figuraActiva).getY(), 40)) {
                             figuras.get(figuraActiva).setX(figuras.get(figuraActiva-1).getX());
                             figuras.get(figuraActiva).setY(figuras.get(figuraActiva-1).getY());
+                            contPuntos++;
+                            puntos.setText("Puntos: " + contPuntos + " / " + numeroFiguras/2);
                             break;
                         }
                     }
