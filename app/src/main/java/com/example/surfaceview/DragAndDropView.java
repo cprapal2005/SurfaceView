@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.os.Handler;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -27,9 +28,11 @@ public class DragAndDropView extends SurfaceView implements SurfaceHolder.Callba
     private boolean dentro = false;
     private hiloPintar thread;
     private Button botonReset, botonAnadir;
-    private TextView puntos;
+    private TextView puntos, countdownTextView;
     private RelativeLayout layout;
     private Canvas canvas;
+    private int secondsLeft = 10;
+    private Handler handler;
 
     public DragAndDropView(Context context) {
         super(context);
@@ -42,6 +45,16 @@ public class DragAndDropView extends SurfaceView implements SurfaceHolder.Callba
         colores.add(Color.YELLOW);colores.add(Color.YELLOW);
         colores.add(Color.MAGENTA);colores.add(Color.MAGENTA);
         colores.add(Color.GREEN);colores.add(Color.GREEN);
+
+        countdownTextView = new TextView(context);
+        countdownTextView.setText("60");
+        RelativeLayout.LayoutParams countdownTextViewParams = new RelativeLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        countdownTextViewParams.addRule(RelativeLayout.ALIGN_START);
+        countdownTextViewParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+
         puntos = new TextView(context);
         puntos.setText("Puntos: " + contPuntos + " / " + numeroFiguras/2);
         RelativeLayout.LayoutParams puntosParams = new RelativeLayout.LayoutParams(
@@ -55,9 +68,18 @@ public class DragAndDropView extends SurfaceView implements SurfaceHolder.Callba
         botonReset.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                crearFiguras();
-                contPuntos = 0;
-                puntos.setText("Puntos: " + contPuntos + " / " + numeroFiguras/2);
+                if(secondsLeft==0) {
+                    crearFiguras();
+                    contPuntos = 0;
+                    puntos.setText("Puntos: " + contPuntos + " / " + numeroFiguras/2);
+                    secondsLeft = 10;
+                    thread = new hiloPintar(getHolder(), DragAndDropView.this);
+                    thread.setRunning(true);
+                    thread.start();
+                    handler = new Handler();
+                    startCountdownThread();
+                }
+
             }
         });
         RelativeLayout.LayoutParams buttonParams = new RelativeLayout.LayoutParams(
@@ -83,6 +105,7 @@ public class DragAndDropView extends SurfaceView implements SurfaceHolder.Callba
         buttonParamsAnadir.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
         layout = new RelativeLayout(context);
         layout.addView(this);
+        layout.addView(countdownTextView, countdownTextViewParams);
         layout.addView(puntos, puntosParams);
         layout.addView(botonAnadir, buttonParamsAnadir);
         layout.addView(botonReset, buttonParams);
@@ -126,6 +149,10 @@ public class DragAndDropView extends SurfaceView implements SurfaceHolder.Callba
         thread = new hiloPintar(getHolder(), this);
         thread.setRunning(true);
         thread.start();
+        handler = new Handler();
+
+        // Inicia el hilo de cuenta regresiva
+        startCountdownThread();
     }
 
     @Override
@@ -207,6 +234,49 @@ public class DragAndDropView extends SurfaceView implements SurfaceHolder.Callba
         }
         return true;
 
+    }
+
+    private void startCountdownThread() {
+        Thread countdownThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (secondsLeft > 0) {
+                    try {
+                        // Pausa el hilo durante un segundo
+                        Thread.sleep(1000);
+
+                        // Actualiza la interfaz de usuario en el hilo principal
+                        handler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                updateUI();
+                            }
+                        });
+
+                        // Decrementa el contador
+                        secondsLeft--;
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                boolean retry = true;
+                thread.setRunning(false);
+                while (retry) {
+                    try {
+                        thread.join();
+                        retry = false;
+                    } catch (InterruptedException e) {}
+                }
+            }
+        });
+
+        // Inicia el hilo
+        countdownThread.start();
+    }
+
+    private void updateUI() {
+        countdownTextView.setText(String.valueOf(secondsLeft));
     }
 
 }
