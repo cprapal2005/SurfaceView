@@ -1,6 +1,8 @@
 package com.example.surfaceview;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -120,9 +122,9 @@ public class DragAndDropView extends SurfaceView implements SurfaceHolder.Callba
         contFiguras=2;
         figuras = new ArrayList<Figura>();
         int minX = 0;
-        int maxX = layout.getWidth();
+        int maxX = layout.getWidth()-200;
         int minY = 0;
-        int maxY = layout.getHeight();
+        int maxY = layout.getHeight()-200;
         for (int i = 0; i < numeroFiguras; i++) {
             Random random = new Random();
             int randomX = random.nextInt(maxX - minX + 1) + minX;
@@ -146,6 +148,14 @@ public class DragAndDropView extends SurfaceView implements SurfaceHolder.Callba
 
     @Override
     public void surfaceCreated(@NonNull SurfaceHolder surfaceHolder) {
+        //Imagen Fondo
+        //Bitmap bmp = BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher_background);
+        //Bitmap img = bmp.createScaledBitmap(bmp, getWidth()*0.2, getHeight()*0.2, true);
+        //canvas.drawBitmap(img, iniX, iniY, null);
+
+        //Musica
+        //setVolumeControlStream();
+
         thread = new hiloPintar(getHolder(), this);
         thread.setRunning(true);
         thread.start();
