@@ -7,17 +7,10 @@ import android.graphics.Rect;
 import java.util.Random;
 
 public class Sprite {
-    private static final int BMP_ROWS = 4;
-    private static final int BMP_COLUMS= 3;
-    private int x = 0;
-    private int y = 0;
-    private int xSpeed = 5;
+    private static final int BMP_ROWS = 4, BMP_COLUMS= 3, MAX_SPEED = 10;
     private GameView gameView;
     private Bitmap bmp;
-    private int currentFrame = 0;
-    private int width;
-    private int height;
-    private int ySpeed;
+    private int currentFrame = 0, width, height, x, y, ySpeed, xSpeed;
     private int[] DIRECTION_TO_ANIMATION_MAP = {3,1,0,2};
 
     public Sprite(GameView gameView, Bitmap bmp) {
@@ -25,9 +18,12 @@ public class Sprite {
         this.bmp = bmp;
         this.width = bmp.getWidth() / BMP_COLUMS;
         this.height = bmp.getHeight() / BMP_ROWS;
+
         Random rnd = new Random();
-        xSpeed = rnd.nextInt(10)-5;
-        ySpeed = rnd.nextInt(10)-5;
+        x = rnd.nextInt(gameView.getWidth() - width);
+        y = rnd.nextInt(gameView.getHeight() - height);
+        xSpeed = rnd.nextInt(MAX_SPEED * 2) - MAX_SPEED;
+        ySpeed = rnd.nextInt(MAX_SPEED * 2) - MAX_SPEED;
     }
 
     private void update() {
@@ -52,5 +48,12 @@ public class Sprite {
         int direction = (int) (Math.round(dirDouble) % BMP_ROWS);
         return DIRECTION_TO_ANIMATION_MAP[direction];
     }
+
+    public boolean isCollition(float x2, float y2) {
+
+        return x2 > x && x2 < x + width && y2 > y && y2 < y + height;
+
+    }
+
 
 }

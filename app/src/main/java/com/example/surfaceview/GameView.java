@@ -16,10 +16,11 @@ import java.util.List;
 
 public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
-    private Bitmap bmp;
-    private Sprite sprite;
+    private Bitmap bmpBlood;
+    private long lastClick = 0;
     private GameLoopThread gameLoopThread;
     private List<Sprite> sprites = new ArrayList<Sprite>();
+    private List<TempSprite> temps = new ArrayList<TempSprite>();
 
     public GameView(Context context) {
         super(context);
@@ -32,8 +33,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         gameLoopThread = new GameLoopThread(this, holder);
         gameLoopThread.setRunning(true);
         gameLoopThread.start();
-        //bmp = BitmapFactory.decodeResource(getResources(), R.drawable.bad5);
-        //sprite = new Sprite(this, bmp);
+        bmpBlood = BitmapFactory.decodeResource(getResources(), R.drawable.blood1);
         createSprites();
     }
 
@@ -61,11 +61,33 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         for (Sprite sprite : sprites) {
             sprite.onDraw(canvas);
         }
+        for (TempSprite tempSprite : temps) {
+            tempSprite.onDraw(canvas);
+        }
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+
+        if(System.currentTimeMillis() - lastClick > 500) lastClick = System.currentTimeMillis();
+
+        synchronized (getHolder()) {
+
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    for (int i = sprites.size() - 1; i >= 0; i--) {
+                        Sprite sprite = sprites.get(i);
+                        if (sprite.isCollition(event.getX(), event.getY())){
+                            sprites.remove(sprite);
+                            temps.add(new TempSprite(temps, this, event.getX(), event.getY(), bmpBlood));
+                        }
+                    }
+                    break;
+            }
+
+        }
         return true;
+
     }
     private void createSprites() {
         sprites.add(createSprite(R.drawable.bad1));
